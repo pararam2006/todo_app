@@ -3,8 +3,17 @@ class Todo {
   String text;
   final int id;
 
-  // get getId => _id;
-
   Todo(this.title, this.text, this.id);
+
+  Todo.fromJson(Map<String, dynamic> json)
+  : title = json['title'] as String,
+    text = json['text'] as String,
+    id = json['id'] as int;
+
+  Map<String, dynamic> toJson() => {
+    'title' : title,
+    'text' : text,
+    'id' : id
+  };
 }
 

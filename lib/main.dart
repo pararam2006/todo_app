@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // Импортируем библиотеку для работы с JSON
 import 'package:todo_app/Todo.dart';
-
-//todo: В КТ4 пригодится
-// import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -17,26 +16,23 @@ class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  _MyAppState createState() => _MyAppState(); //Сохранение состояния
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-
-  //todo: В КТ4 пригодится
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _loadData(); // Загрузка данных при инициализации
-  // }
-
   String title = "";
   String text = "";
   int id = 1;
   List<Todo> todoList = [Todo("Это пример задачи", "Создай задачу, нажав кнопку снизу", 0)];
 
   @override
+  void initState() {
+    super.initState();
+    _loadData(); // Загрузка данных при инициализации
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Интерфейс
     return Center(
       child: Container(
         width: 300,
@@ -48,18 +44,12 @@ class _MyAppState extends State<MyApp> {
                 itemCount: todoList.length,
                 itemBuilder: (BuildContext context, int index) {
                   return Container(
-                    decoration: BoxDecoration(
-                      // border: Border.all(
-                      //   color: Colors.black,
-                      //   width: 1
-                      // )
-                    ),
                     child: Card(
                       child: Column(
                         children: [
                           Text(todoList[index].title, style: TextStyle(fontSize: 22)),
                           Text(todoList[index].text, style: TextStyle(fontSize: 16)),
-                        ]
+                        ],
                       ),
                     ),
                   );
@@ -67,7 +57,7 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             ElevatedButton(
-              onPressed: () => _dialogBuilder(context), // Кнопка для вызова диалога
+              onPressed: () => _dialogBuilder(context),
               child: Text("Добавить задачу"),
             ),
           ],
@@ -76,30 +66,23 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> jsonList = todoList.map((todo) => json.encode(todo.toJson())).toList(); // todoList в json
+    await prefs.setStringList('json_todo_list', jsonList); // Сохраняем список JSON-строк
+  }
 
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String>? jsonList = prefs.getStringList('json_todo_list'); // Получаем список JSON-строк
 
+    if (jsonList != null) {
+      setState(() {
+        todoList = jsonList.map((jsonString) => Todo.fromJson(json.decode(jsonString))).toList(); // json в todoList
+      });
+    }
+  }
 
-  //todo: Оставлю этот блок кода для КТ4, потом внедрю
-  // //Загрузка сохраненных данных
-  // Future<void> _loadData() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   setState(() {
-  //     /* todo: Вместо _savedData подгружать распарсенную JSON-строку,
-  //        todo: ну или распарсить прямо тут :)
-  //      */
-  //     // _savedData = prefs.getString('my_key') ?? 'Нет данных'; // Получение данных по ключу
-  //   });
-  // }
-  //
-  // //Сохранение данных
-  // Future<void> _saveData(String data) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   //todo: Написать сохранение моих данных, а не шляпы из примера
-  //   await prefs.setString('my_key', data); // Сохранение данных по ключу
-  //   _loadData(); // Загрузка данных после сохранения
-  // }
-
-  //Создание диалогового окна
   Future<void> _dialogBuilder(BuildContext context) {
     return showDialog<void>(
       context: context,
@@ -107,7 +90,7 @@ class _MyAppState extends State<MyApp> {
         return AlertDialog(
           title: Text('Создайте задачу'),
           content: Column(
-            mainAxisSize: MainAxisSize.min, // Ограничиваем высоту
+            mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 onChanged: (newTitle) {
@@ -141,16 +124,16 @@ class _MyAppState extends State<MyApp> {
               child: const Text('Создать'),
               onPressed: () {
                 if (title.trim().isEmpty || text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text("Поля не должны быть пустыми!", style: TextStyle(color: Colors.white)),
-                      )
-                  );
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content:
+                    Text("Поля не должны быть пустыми!", style: TextStyle(color: Colors.white)),
+                  ));
                 } else {
                   setState(() {
                     Todo todo = Todo(title, text, id);
                     todoList.add(todo);
                     id++;
+                    _saveData(); // Сохраняем данные после добавления задачи
                   });
                   Navigator.of(context).pop();
                 }
@@ -161,5 +144,4 @@ class _MyAppState extends State<MyApp> {
       },
     );
   }
-
 }
